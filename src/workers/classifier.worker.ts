@@ -12,7 +12,14 @@ import embeddings from "../data/text-embeddings.json";
 env.allowLocalModels = false;
 env.backends.onnx.wasm!.wasmPaths = "/ort/";
 
+// low ram phones: one thread uses less memory
+const { deviceMemory = 8 } = self.navigator as Navigator & {
+  deviceMemory?: number;
+};
+if (deviceMemory <= 4) env.backends.onnx.wasm!.numThreads = 1;
+
 const MODEL = "Xenova/clip-vit-base-patch32";
+const DTYPES = ["q8", "q4"] as const; // q4 is smaller, used if q8 runs out of memory
 const LOGIT_SCALE = 100; // clip temperature
 
 type Processor = (image: unknown) => Promise<Record<string, unknown>>;
@@ -41,14 +48,22 @@ async function load() {
   processor = (await AutoProcessor.from_pretrained(
     MODEL,
   )) as unknown as Processor;
-  vision = (await CLIPVisionModelWithProjection.from_pretrained(MODEL, {
-    device: "wasm",
-    dtype: "q8",
-    progress_callback: (p) => {
-      if (p.status === "progress_total")
-        post({ type: "progress", percent: p.progress });
-    },
-  })) as unknown as Vision;
+  for (const dtype of DTYPES) {
+    try {
+      vision = (await CLIPVisionModelWithProjection.from_pretrained(MODEL, {
+        device: "wasm",
+        dtype,
+        progress_callback: (p) => {
+          if (p.status === "progress_total")
+            post({ type: "progress", percent: p.progress });
+        },
+      })) as unknown as Vision;
+      return;
+    } catch (err) {
+      const noMemory = /alloc|memory/i.test(String(err));
+      if (!noMemory || dtype === DTYPES[DTYPES.length - 1]) throw err;
+    }
+  }
 }
 
 function normalize(v: Float32Array): number[] {
