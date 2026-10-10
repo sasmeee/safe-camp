@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Ondevice campsite safety inspector",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    background_color: "#f5f5f0",
+    theme_color: "#1b382b",
     icons: [
       {
         src: "/web-app-manifest-192x192.png",
