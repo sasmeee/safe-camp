@@ -1,5 +1,7 @@
+import Scanner from "@/components/Scanner";
+
 const HomePage = () => {
-  return <div>HomePage</div>;
+  return <Scanner />;
 };
 
 export default HomePage;
