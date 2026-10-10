@@ -140,7 +140,8 @@ export default function Scanner() {
             </>
           )}
           <p className="text-sm">
-            Match score {Math.round(verdict.confidence * 100)}% (relative, not a
+            {verdict.status === "none" ? "Everyday-scene score" : "Match score"}{" "}
+            {Math.round(verdict.confidence * 100)}% (relative, not a
             probability)
           </p>
           <details className="text-sm">

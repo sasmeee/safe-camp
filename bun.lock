@@ -29,6 +29,7 @@
     },
   },
   "trustedDependencies": [
+    "onnxruntime-node",
     "sharp",
     "unrs-resolver",
   ],
