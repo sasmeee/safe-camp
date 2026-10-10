@@ -71,6 +71,21 @@ export function useClassifier() {
     return () => clearTimeout(t);
   }, [status]);
 
+  // progress frozen for 20s, clear caches once and reload
+  useEffect(() => {
+    if (status !== "loading") return;
+    const t = setTimeout(() => {
+      try {
+        if (sessionStorage.getItem("auto-reset")) return;
+        sessionStorage.setItem("auto-reset", "1");
+      } catch {
+        return;
+      }
+      void resetCache();
+    }, 20000);
+    return () => clearTimeout(t);
+  }, [status, percent]);
+
   function classify(file: File) {
     setStatus("busy");
     setVerdict(null);
