@@ -109,19 +109,17 @@ SafeCamp is a first-pass aid, not an authority.
 
 Real scans from a phone, run on the device with no server involved.
 
-<p align="center">
-  <img src="docs/screenshots/scan-snake.webp" width="180" alt="Snake — Danger, 83%" />
-  <img src="docs/screenshots/scan-wasp-nest.webp" width="180" alt="Wasp nest — Danger, 95%" />
-  <img src="docs/screenshots/scan-pet-dog.webp" width="180" alt="Pet dog — no known hazard" />
-  <img src="docs/screenshots/scan-tent-campsite.webp" width="180" alt="Tent campsite — not sure" />
-</p>
+| | | | |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/scan-snake.webp" width="200" alt="Snake photo, Danger result at 83%" /> | <img src="docs/screenshots/scan-wasp-nest.webp" width="200" alt="Wasp nest photo, Danger result at 95%" /> | <img src="docs/screenshots/scan-pet-dog.webp" width="200" alt="Pet dog photo, no known hazard" /> | <img src="docs/screenshots/scan-tent-campsite.webp" width="200" alt="Tent campsite photo, not sure result" /> |
+| **Snake**<br>Danger, 83% | **Wasp nest**<br>Danger, 95% | **Pet dog**<br>No known hazard, 97% | **Tent campsite**<br>Not sure, 38% |
 
-| Photo                 | Result                                       | Time    | What it shows                                                         |
-| --------------------- | -------------------------------------------- | ------- | --------------------------------------------------------------------- |
-| Snake in leaf litter  | Danger: Snake (83%)                          | 494 ms  | Scorpion is second at 10%, so the top class is clear.                 |
-| Wasp nest             | Danger: Wasp or hornet nest (95%)            | 1048 ms | Names “Bee swarm or wild hive” as the other possibility.              |
-| Pet dog on a sofa     | No known hazard: “Looks like: Pet dog” (97%) | 1471 ms | The everyday-scene labels stop a normal photo from becoming a hazard. |
-| Tent with camp chairs | Not sure: “Possible: Risky campfire” (38%)   | 774 ms  | A wrong guess, see the development notes.                             |
+| Photo | Result | Time | What it shows |
+| --- | --- | --- | --- |
+| Snake in leaf litter | Danger: Snake (83%) | 494 ms | Scorpion is second at 10%, so the top class is clear. |
+| Wasp nest | Danger: Wasp or hornet nest (95%) | 1048 ms | Names "Bee swarm or wild hive" as the other possibility. |
+| Pet dog on a sofa | No known hazard: "Looks like: Pet dog" (97%) | 1471 ms | The everyday-scene labels stop a normal photo from becoming a hazard. |
+| Tent with camp chairs | Not sure: "Possible: Risky campfire" (38%) | 774 ms | A wrong guess, see the development notes. |
 
 ## Development notes
 
