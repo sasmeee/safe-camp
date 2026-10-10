@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/copy-ort.mjs && bun scripts/gen-embeddings.ts",
     "embeddings": "bun scripts/gen-embeddings.ts",
-    "prebuild": "node scripts/copy-ort.mjs",
+    "prebuild": "node scripts/copy-ort.mjs && bun scripts/gen-embeddings.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

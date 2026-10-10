@@ -17,13 +17,15 @@ export type Hazard = {
   name: string;
   category: Category;
   risk: Risk;
+  // easily confused hazards that share advice (e.g. bee vs wasp)
+  family?: string;
   prompts: string[];
   summary: string;
   actions: string[];
 };
 
 export const HAZARDS: Hazard[] = [
-  // ---------- PLANTS & FUNGI ----------
+  // plants and fungi
   {
     id: "poison-ivy",
     name: "Poison ivy",
@@ -116,9 +118,9 @@ export const HAZARDS: Hazard[] = [
       "a photo of dark berries hanging from a wild plant",
     ],
     summary:
-      "Many wild berries are poisonous and a photo cannot tell safe from toxic.",
+      "Many wild berries are poisonous and a photo cannot tell which are harmful.",
     actions: [
-      "Do not eat wild berries or fruit unless an expert confirms they are safe.",
+      "Do not eat wild berries or fruit unless an expert identifies them as edible.",
       "Keep children and pets away.",
       "If swallowed, call poison control or emergency services.",
     ],
@@ -132,7 +134,7 @@ export const HAZARDS: Hazard[] = [
       "a photo of wild mushrooms growing on the forest floor",
       "a photo of a mushroom cap and stem in the grass",
     ],
-    summary: "Photos cannot tell safe mushrooms from deadly lookalikes.",
+    summary: "Photos cannot tell edible mushrooms from deadly lookalikes.",
     actions: [
       "Do not eat, taste or cook wild mushrooms.",
       "Wash hands after touching. Keep children and pets away.",
@@ -140,17 +142,22 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- INSECTS & SMALL CREATURES ----------
+  // insects and small creatures
   {
     id: "wasp-nest",
     name: "Wasp or hornet nest",
     category: "insect",
     risk: "danger",
+    family: "stinging-insects",
     prompts: [
+      "a photo of a wasp nest",
+      "a photo of a hornet nest",
       "a photo of a paper wasp nest with hexagonal honeycomb cells and wasps on it",
       "a photo of a grey papery hornet nest hanging from a tree branch",
       "a close-up photo of wasps crawling on a nest",
       "a photo of a hole in the ground with wasps flying in and out",
+      "a macro photo of a yellow and black wasp",
+      "a photo of a yellowjacket wasp",
     ],
     summary: "Nests defend aggressively. Multiple stings can be serious.",
     actions: [
@@ -164,9 +171,16 @@ export const HAZARDS: Hazard[] = [
     name: "Bee swarm or wild hive",
     category: "insect",
     risk: "danger",
+    family: "stinging-insects",
     prompts: [
+      "a photo of a beehive",
       "a photo of a honeybee swarm clustered on a tree branch",
       "a photo of a wild beehive with many bees at its entrance",
+      "a photo of a wooden beehive box with bees flying around it",
+      "a photo of honeycomb full of bees",
+      "a close-up photo of a honeybee",
+      "a macro photo of a bee on a flower",
+      "a photo of a bumblebee",
     ],
     summary: "Disturbed bees can sting in large numbers.",
     actions: [
@@ -275,7 +289,7 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- ANIMALS ----------
+  // animals
   {
     id: "snake",
     name: "Snake",
@@ -301,6 +315,10 @@ export const HAZARDS: Hazard[] = [
     risk: "critical",
     prompts: [
       "a photo of a bear in the forest",
+      "a photo of a black bear climbing in a tree",
+      "a photo of a dark bear cub sitting on a tree branch",
+      "a photo of a brown bear walking through woods",
+      "a dark silhouette of a large animal in a tree",
       "a photo of large animal paw prints in mud",
       "a photo of a big cat such as a leopard or tiger in the wild",
     ],
@@ -378,7 +396,7 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- TERRAIN & WATER ----------
+  // terrain and water
   {
     id: "dead-tree",
     name: "Dead or leaning tree overhead",
@@ -488,7 +506,7 @@ export const HAZARDS: Hazard[] = [
       "Strong currents can sweep people off their feet in shallow water.",
     actions: [
       "Do not wade or swim in fast water.",
-      "Find a safer crossing or turn back.",
+      "Find another crossing or turn back.",
       "Never cross at night or after heavy rain.",
     ],
   },
@@ -563,7 +581,7 @@ export const HAZARDS: Hazard[] = [
       "a photo of murky green stagnant pond water",
       "a photo of still dirty water with algae",
     ],
-    summary: "Unsafe to drink and a breeding spot for mosquitoes.",
+    summary: "Can make you sick if drunk and breeds mosquitoes.",
     actions: [
       "Do not drink untreated water, even if it looks clear.",
       "Boil for at least 1 minute or use a proper filter or purifier.",
@@ -571,7 +589,7 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- WEATHER & FIRE ----------
+  // weather and fire
   {
     id: "storm-lightning",
     name: "Storm or lightning risk",
@@ -622,7 +640,7 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- CAMP HABITS ----------
+  // camp habits
   {
     id: "food-left-out",
     name: "Food or trash left out",
@@ -640,7 +658,7 @@ export const HAZARDS: Hazard[] = [
     ],
   },
 
-  // ---------- GOOD SIGNS ----------
+  // good signs
   {
     id: "good-tent-site",
     name: "Good tent site features",
@@ -707,19 +725,30 @@ export const HAZARDS: Hazard[] = [
   },
 ];
 
-export const HARMLESS_PROMPTS = [
-  "a photo of green grass",
-  "a photo of ordinary tree leaves",
-  "a photo of bare soil and small stones",
-  "a photo of an empty bird nest made of twigs in a tree",
-  "a photo of a bird nest with eggs",
-  "a photo of pine branches with needles",
-  "a photo of a bunch of dry sticks and twigs",
-  "a photo of a spider web on a plant",
-  "a photo of tree bark",
-  "a photo of a bird sitting on a branch",
-  "a photo of a person's face",
-  "a photo of an indoor room",
-  "a photo of a rock",
-  "a photo of a paved road",
+export const HARMLESS: { name: string; prompt: string }[] = [
+  { name: "Grass", prompt: "a photo of green grass" },
+  { name: "Tree leaves", prompt: "a photo of ordinary tree leaves" },
+  { name: "Bare soil and stones", prompt: "a photo of bare soil and small stones" },
+  { name: "Empty bird nest", prompt: "a photo of an empty bird nest made of twigs in a tree" },
+  { name: "Bird nest with eggs", prompt: "a photo of a bird nest with eggs" },
+  { name: "Pine branches", prompt: "a photo of pine branches with needles" },
+  { name: "Dry sticks and twigs", prompt: "a photo of a bunch of dry sticks and twigs" },
+  { name: "Spider web", prompt: "a photo of a spider web on a plant" },
+  { name: "Tree bark", prompt: "a photo of tree bark" },
+  { name: "Bird on a branch", prompt: "a photo of a bird sitting on a branch" },
+  { name: "Person's face", prompt: "a photo of a person's face" },
+  { name: "Indoor room", prompt: "a photo of an indoor room" },
+  { name: "Rock", prompt: "a photo of a rock" },
+  { name: "Paved road", prompt: "a photo of a paved road" },
+  { name: "Garden flowers", prompt: "a photo of colorful flowers in a garden" },
+  { name: "Butterfly", prompt: "a photo of a butterfly on a flower" },
+  { name: "Ladybug", prompt: "a photo of a ladybug on a leaf" },
+  { name: "Dragonfly", prompt: "a photo of a dragonfly" },
+  { name: "Pet dog", prompt: "a photo of a pet dog" },
+  { name: "House cat", prompt: "a photo of a house cat" },
+  { name: "Coffee cup", prompt: "a photo of a cup of coffee on a table" },
+  { name: "Hand", prompt: "a photo of a person's hand" },
+  { name: "Potted plant", prompt: "a photo of a green plant in a pot" },
+  { name: "Sky and clouds", prompt: "a photo of a blue sky with clouds" },
+  { name: "Lawn with weeds", prompt: "a photo of a lawn with a few weeds" },
 ];

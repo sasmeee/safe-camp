@@ -12,7 +12,7 @@ export default function EmbeddingsPage() {
   async function generate() {
     setJson(null);
     setLog("Loading text model (needs internet)…");
-    // dynamic import: keep this out of server rendering
+    // load on demand, skip server rendering
     const tjs = await import("@huggingface/transformers");
     tjs.env.allowLocalModels = false;
     tjs.env.backends.onnx.wasm!.wasmPaths = "/ort/";
