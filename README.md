@@ -12,7 +12,7 @@
 > Built for the [Hacktoberfest Open-Source AI Challenge, Week 1: Touch Grass](https://dev.to/challenges/hacktoberfest-week1-2026-10-05).
 > The repository was started on October 8, 2026, inside the challenge window.
 
-- **Live demo:** `TODO: add deployed URL`
+- **Live demo:** [safecamp.onrender.com](https://safecamp.onrender.com)
 - **Demo video:** `TODO: add link`
 - **DEV post:** `TODO: add link`
 
@@ -110,20 +110,22 @@ SafeCamp is a first-pass aid, not an authority.
 - The advice is general. Follow local rangers, signs and emergency services.
 - Hazards differ by region. A bear result in a region with no bears is a model error, not a warning.
 
-<!--
 ## Test results
 
-Screenshots of real scans.
+Real scans from a phone, run on the device with no server involved.
 
-| Scenario | Screenshot |
-| --- | --- |
-| Hornet nest, Critical or Danger result | `TODO: add screenshot` |
-| Empty bird nest, harmless result | `TODO: add screenshot` |
-| Favorable campsite | `TODO: add screenshot` |
-| Why? panel | `TODO: add screenshot` |
-| Dark or blurry photo warning | `TODO: add screenshot` |
-| Offline, airplane mode | `TODO: add screenshot` |
--->
+| | | | |
+| :---: | :---: | :---: | :---: |
+| <img src="docs/screenshots/scan-snake.webp" width="200" alt="Snake photo, Danger result at 83%" /> | <img src="docs/screenshots/scan-wasp-nest.webp" width="200" alt="Wasp nest photo, Danger result at 95%" /> | <img src="docs/screenshots/scan-pet-dog.webp" width="200" alt="Pet dog photo, no known hazard" /> | <img src="docs/screenshots/scan-tent-campsite.webp" width="200" alt="Tent campsite photo, not sure result" /> |
+| **Snake**<br>Danger, 83% | **Wasp nest**<br>Danger, 95% | **Pet dog**<br>No known hazard, 97% | **Tent campsite**<br>Not sure, 38% |
+
+| Photo | Result | Time | What it shows |
+| --- | --- | --- | --- |
+| Snake in leaf litter | Danger: Snake (83%) | 494 ms | Scorpion is second at 10%, so the top class is clear. |
+| Wasp nest | Danger: Wasp or hornet nest (95%) | 1048 ms | Names "Bee swarm or wild hive" as the other possibility. |
+| Pet dog on a sofa | No known hazard: "Looks like: Pet dog" (97%) | 1471 ms | The everyday-scene labels stop a normal photo from becoming a hazard. |
+| Tent with camp chairs | Not sure: "Possible: Risky campfire" (38%) | 774 ms | A wrong guess, see the development notes. |
+
 
 ## Development notes
 
@@ -133,6 +135,19 @@ Found during development, and what changed:
   "bird nest" class, so the closest hazard won. Adding everyday look-alike classes, including bird nests, fixed it.
 - Growing the database from 5 to 41 entries pushed a scan from about 1.4 s to 3.6-5 s on a laptop,
   because every scan re-encoded every prompt. Precomputing the text vectors brought it to under 1.5 s.
+- The production build crashed the worker on every page refresh, while `bun run dev` was fine. Turbopack
+  puts the worker's settings in the `#hash` of its URL, and the service worker served the script from cache
+  without the hash, so the worker started empty. The service worker (`src/app/sw.ts`) now rebuilds that one
+  response so the URL survives. Dev never showed it because the service worker is off in dev.
+- Cross-origin isolation headers (COOP and COEP) are set in `next.config.ts`, which the threaded WebAssembly worker needs.
+- On a phone, the installed PWA failed with "failed to allocate a buffer of size 89117001" while the same app
+  worked in a browser tab. The 89 MB model did not fit in memory. On devices with 4 GB of RAM or less the model
+  now runs on one thread, and if the int8 model still runs out of memory the worker falls back to a smaller 4-bit model.
+- After a new deploy, loading could stall at 100% until the app cache was reset by hand. If progress freezes for
+  20 seconds, the app now clears its caches and reloads once per session.
+- The tent photo above shows a limit. A tent with camp chairs came back as "Possible: Risky campfire" (38%),
+  with "Good tent site features" second at 29%. The low score is why it says "not sure" and not a firm hazard.
+  The app has no campfire in that picture, so this is a model mistake that the confidence rule softened.
 
 ## Run it locally
 
