@@ -1,281 +1,184 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { HAZARDS, type Risk } from "@/lib/hazards";
-import type { Verdict } from "@/lib/aggregate";
-import type { FromWorker, ImageQuality, ToWorker } from "@/lib/messages";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useClassifier } from "@/hooks/useClassifier";
+import { CaptureCard } from "./capture/CaptureCard";
+import { DisclaimerBanner } from "./layout/DisclaimerBanner";
+import { AnalyzingNote } from "./status/AnalyzingNote";
+import { Button } from "./ui/Button";
+import { Tips } from "./capture/Tips";
+import { ScanAction } from "./capture/ScanAction";
+import { ResultCard } from "./result/ResultCard";
+import { Header } from "./layout/Header";
+import { Hero } from "./layout/Hero";
+import { ModelLoader } from "./status/ModelLoader";
+import { QualityNotice } from "./result/QualityNotice";
+import { ErrorNotice } from "./status/ErrorNotice";
+import { PhotoPreview } from "./capture/PhotoPreview";
 
-const RISK_STYLE: Record<Risk, string> = {
-  good: "border-risk-safe bg-risk-safe/10",
-  caution: "border-risk-caution bg-risk-caution/10",
-  danger: "border-risk-danger bg-risk-danger/10",
-  critical: "border-risk-critical bg-risk-critical/10",
-};
+const Scanner = () => {
+  const {
+    status,
+    percent,
+    verdict,
+    ms,
+    error,
+    stuck,
+    quality,
+    workerFailed,
+    classify,
+    retry,
+    resetCache,
+  } = useClassifier();
 
-export default function Scanner() {
-  const worker = useRef<Worker | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<string | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "busy">("loading");
-  const [percent, setPercent] = useState(0);
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [ms, setMs] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [stuck, setStuck] = useState(false);
-  const [quality, setQuality] = useState<ImageQuality | null>(null);
-  const [workerAttempt, setWorkerAttempt] = useState(0);
-  const [workerFailed, setWorkerFailed] = useState(false);
 
-  useEffect(() => {
-    const w = new Worker(
-      new URL("../workers/classifier.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    worker.current = w;
+  // free the photo url when leaving the page
+  useEffect(
+    () => () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    },
+    [],
+  );
 
-    w.onmessage = (e: MessageEvent<FromWorker>) => {
-      if (worker.current !== w) return;
-      const m = e.data;
-      if (m.type === "progress") setPercent(Math.round(m.percent));
-      else if (m.type === "ready") setStatus("ready");
-      else if (m.type === "result") {
-        setVerdict(m.verdict);
-        setMs(m.ms);
-        setQuality(m.quality);
-        setStatus("ready");
-      } else if (m.type === "error") {
-        setError(m.message);
-        setStatus("ready");
-      }
-    };
-
-    const handleWorkerFailure = (message: string) => {
-      console.error(message);
-      if (worker.current !== w) return;
-      worker.current = null;
-      w.terminate();
-      setWorkerFailed(true);
-      setStatus("ready");
-      setError("The offline model stopped unexpectedly.");
-    };
-
-    w.onerror = () => handleWorkerFailure("Worker crashed");
-    w.onmessageerror = () => handleWorkerFailure("Worker message error");
-    w.postMessage({ type: "load" } satisfies ToWorker);
-    navigator.storage?.persist?.();
-    return () => {
-      if (worker.current === w) worker.current = null;
-      w.terminate();
-    };
-  }, [workerAttempt]);
-
-  // show help if loading takes too long
-  useEffect(() => {
-    if (status !== "loading") return;
-    const t = setTimeout(() => setStuck(true), 25000);
-    return () => clearTimeout(t);
-  }, [status]);
-
-  // clear app caches, keep the model
-  async function resetCache() {
-    const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? [];
-    await Promise.all(regs.map((r) => r.unregister()));
-    const keys = await caches.keys();
-    await Promise.all(
-      keys
-        .filter((k) => !k.includes("transformers"))
-        .map((k) => caches.delete(k)),
-    );
-    location.reload();
+  function clearPreview() {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = null;
+    setPreview(null);
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || status !== "ready") return;
-    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+  function pick(file: File) {
+    if (status !== "ready" || workerFailed) return;
+    clearPreview();
     const url = URL.createObjectURL(file);
     previewRef.current = url;
     setPreview(url);
-    setStatus("busy");
-    setVerdict(null);
-    setQuality(null);
-    setError(null);
-    setWorkerFailed(false);
-    worker.current?.postMessage({
-      type: "classify",
-      id: Date.now(),
-      image: file,
-    } satisfies ToWorker);
-    e.target.value = "";
+    classify(file);
   }
 
-  const hazard =
-    verdict && verdict.status !== "none"
-      ? HAZARDS.find((h) => h.id === verdict.hazardId)
-      : undefined;
+  function onInput(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) pick(file);
+  }
 
-  const also =
-    verdict && verdict.status !== "none" && verdict.alsoId
-      ? HAZARDS.find((h) => h.id === verdict.alsoId)
-      : undefined;
+  function handleRetry() {
+    clearPreview();
+    retry();
+  }
 
-  const cardStyle =
-    !verdict || verdict.status === "none"
-      ? "border-forest/30 bg-white/50"
-      : verdict.status === "unsure"
-        ? RISK_STYLE.caution
-        : RISK_STYLE[hazard?.risk ?? "caution"];
+  const openCamera = () => cameraRef.current?.click();
+  const openGallery = () => galleryRef.current?.click();
+
+  const busy = status === "busy";
+  const loading = status === "loading";
+  const hasPhoto = preview !== null;
+  const inputsOff = status !== "ready" || workerFailed;
 
   return (
-    <div className="mx-auto max-w-md space-y-4 p-4">
-      <h1 className="text-2xl font-bold">SafeCamp</h1>
-      <p className="rounded-lg border border-risk-caution bg-risk-caution/10 p-3 text-sm">
-        Visual guidance only. Check the whole site and follow local guidance.
-      </p>
+    <div className="flex min-h-dvh flex-col">
+      <Header status={status} hasPhoto={hasPhoto} />
 
-      {status === "loading" && (
-        <p>Preparing offline model… {percent}% (first time needs internet)</p>
-      )}
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-4 lg:gap-5 lg:px-6 lg:py-6">
+        {!hasPhoto && !loading && <Hero />}
+        <DisclaimerBanner />
 
-      {status === "loading" && stuck && (
-        <div className="space-y-2 rounded-xl border-2 border-risk-caution p-3 text-sm">
-          <p>
-            Taking too long. Open the browser console (F12) for errors, or reset
-            the app cache (keeps the downloaded model).
-          </p>
-          <button
-            type="button"
-            onClick={resetCache}
-            className="rounded-lg bg-forest px-3 py-2 font-semibold text-sand"
-          >
-            Reset app cache
-          </button>
-        </div>
-      )}
+        {loading ? (
+          <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4">
+            <ModelLoader percent={percent} stuck={stuck} onReset={resetCache} />
+            <div className="mt-auto">
+              <Button icon="camera" disabled>
+                Take photo
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <QualityNotice quality={quality} onRetake={openCamera} />
+            {error && (
+              <ErrorNotice
+                message={error}
+                canRetry={workerFailed}
+                onRetry={handleRetry}
+              />
+            )}
 
-      <label className="block rounded-xl bg-forest p-4 text-center font-semibold text-sand">
-        {status === "busy" ? "Analyzing…" : "Take or choose photo"}
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          disabled={status !== "ready"}
-          onChange={onFile}
-        />
-      </label>
-
-      {preview && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={preview}
-          alt="Your photo"
-          className="max-h-64 w-full rounded-xl object-cover"
-        />
-      )}
-
-      {quality?.tooDark && (
-        <p role="alert" className="text-risk-caution">
-          Retake this photo in brighter light.
-        </p>
-      )}
-      {quality?.tooBlurry && (
-        <p role="alert" className="text-risk-caution">
-          Retake this photo with steadier focus.
-        </p>
-      )}
-
-      {error && (
-        <div className="space-y-2" role="alert">
-          <p className="text-risk-critical">{error}</p>
-          {workerFailed && (
-            <button
-              type="button"
-              onClick={() => {
-                setVerdict(null);
-                setStatus("loading");
-                setPercent(0);
-                setStuck(false);
-                setError(null);
-                setWorkerFailed(false);
-                setWorkerAttempt((attempt) => attempt + 1);
-              }}
-              className="rounded-lg bg-forest px-3 py-2 font-semibold text-sand"
+            <div
+              className={`flex flex-1 flex-col gap-4 lg:flex-none lg:grid lg:gap-5 ${
+                hasPhoto
+                  ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:items-start"
+                  : "lg:grid-cols-2 lg:items-stretch"
+              }`}
             >
-              Retry model
-            </button>
-          )}
-        </div>
-      )}
+              <div className="flex flex-col gap-4">
+                {preview ? (
+                  <>
+                    <PhotoPreview src={preview} analyzing={busy} />
+                    <ScanAction
+                      busy={busy}
+                      ms={ms}
+                      onClick={openCamera}
+                      className="hidden lg:flex"
+                    />
+                  </>
+                ) : (
+                  <CaptureCard
+                    disabled={inputsOff}
+                    onCamera={openCamera}
+                    onGallery={openGallery}
+                    onDropFile={pick}
+                  />
+                )}
+              </div>
 
-      {verdict && (
-        <div className={`space-y-2 rounded-xl border-2 p-4 ${cardStyle}`}>
-          {verdict.status === "none" ? (
-            <>
-              <p className="text-lg font-bold">
-                {quality?.tooDark
-                  ? "Too dark to judge"
-                  : quality?.tooBlurry
-                    ? "Too blurry to judge"
-                    : verdict.seen
-                      ? `Looks like: ${verdict.seen}`
-                      : "No known hazard matched"}
-              </p>
-              <p className="text-sm">
-                {quality?.tooDark || quality?.tooBlurry
-                  ? "Retake the photo before relying on this result."
-                  : "No hazard spotted in this photo. Still check the whole site."}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-bold">
-                {verdict.status === "match" && hazard?.risk === "good"
-                  ? "No hazard spotted in this photo. Still check the whole site."
-                  : verdict.status === "unsure"
-                    ? `Possible: ${hazard?.name}. Treat with caution.`
-                    : hazard?.name}
-              </p>
-              {verdict.status === "match" && hazard && (
-                <p className="text-xs font-semibold uppercase">
-                  {hazard.risk === "good"
-                    ? "Looks favorable"
-                    : `Risk: ${hazard.risk}`}
-                </p>
-              )}
-              {also && (
-                <p className="text-sm">
-                  Could also be: {also.name}. Treat both with the same care.
-                </p>
-              )}
-              <p>{hazard?.summary}</p>
-              <ul className="list-disc pl-5">
-                {hazard?.actions.map((a) => (
-                  <li key={a}>{a}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          <p className="text-sm">
-            {verdict.status === "none" ? "Everyday-scene score" : "Match score"}{" "}
-            {Math.round(verdict.confidence * 100)}% (relative, not a
-            probability)
-          </p>
-          <details className="text-sm">
-            <summary className="cursor-pointer">Why?</summary>
-            <ul className="pl-5">
-              {verdict.breakdown.map((b) => (
-                <li key={b.id}>
-                  {b.id}: {Math.round(b.score * 100)}%
-                </li>
-              ))}
-            </ul>
-          </details>
-          <p className="text-xs opacity-70">
-            {ms} ms, on this device. Not a substitute for expert advice.
-          </p>
-        </div>
-      )}
+              <div className="flex flex-1 flex-col gap-4">
+                {busy && <AnalyzingNote />}
+                {verdict && <ResultCard verdict={verdict} quality={quality} />}
+                {preview ? (
+                  <ScanAction
+                    busy={busy}
+                    ms={ms}
+                    onClick={openCamera}
+                    className="mt-auto flex lg:hidden"
+                  />
+                ) : (
+                  <>
+                    <Tips />
+                    <p className="mt-auto text-center text-xs text-muted lg:hidden">
+                      Runs on this device. Photos stay on your phone.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        tabIndex={-1}
+        disabled={inputsOff}
+        onChange={onInput}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        tabIndex={-1}
+        disabled={inputsOff}
+        onChange={onInput}
+      />
     </div>
   );
-}
+};
+
+export default Scanner;
