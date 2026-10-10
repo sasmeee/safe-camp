@@ -26,4 +26,25 @@ const serwist = new Serwist({
   ],
 });
 
+// cached response loses the worker #hash, so rebuild it
+self.addEventListener("fetch", (event) => {
+  const { destination, url } = event.request;
+  if (destination !== "worker" || !url.includes("turbopack-worker")) return;
+  event.respondWith(
+    (async () => {
+      const res =
+        (await serwist.matchPrecache(event.request)) ??
+        (await fetch(event.request));
+      // clean headers, old ones can break the body
+      return new Response(await res.blob(), {
+        headers: {
+          "Content-Type": res.headers.get("Content-Type") ?? "text/javascript",
+          "Cross-Origin-Embedder-Policy": "require-corp",
+          "Cross-Origin-Opener-Policy": "same-origin",
+        },
+      });
+    })(),
+  );
+});
+
 serwist.addEventListeners();

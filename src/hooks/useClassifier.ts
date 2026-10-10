@@ -51,7 +51,10 @@ export function useClassifier() {
       setError("The offline model stopped unexpectedly.");
     };
 
-    w.onerror = () => handleWorkerFailure("Worker crashed");
+    w.onerror = (ev) =>
+      handleWorkerFailure(
+        `Worker crashed: ${ev.message} at ${ev.filename}:${ev.lineno}`,
+      );
     w.onmessageerror = () => handleWorkerFailure("Worker message error");
     w.postMessage({ type: "load" } satisfies ToWorker);
     navigator.storage?.persist?.();
