@@ -185,7 +185,7 @@ No cloud APIs (hosted LLMs, databases or text-to-speech) are used, so the offlin
 ## Partner technology
 
 - **Render:** hosts the PWA as a free Web Service. Build command: `bun install && bun run build`. Start command: `bun run start`. Auto-deploys on push to the linked branch.
-- **GitHub Actions:** CI runs lint and build on every push and pull request. `TODO: add detail or workflow link`
+- **GitHub Actions:** CI runs lint and build on every push to `dev` and `main`, and on pull requests to `main`. See `.github/workflows/ci.yml`.
 
 ## Credits and licenses
 
