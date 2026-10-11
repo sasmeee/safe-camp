@@ -21,7 +21,7 @@
 > The repository was started on October 8, 2026, inside the challenge window.
 
 - **Live demo:** [safecamp.onrender.com](https://safecamp.onrender.com)
-- **Demo video:** [youtu.be/T_eaoRa1YOM](https://youtu.be/T_eaoRa1YOM)
+- **Demo video:** [Watch on YouTube](https://youtu.be/T_eaoRa1YOM)
 - **DEV post:** [SafeCamp: an offline campsite safety check that runs on your phone](https://dev.to/sasmeee/safecamp-an-offline-campsite-safety-check-that-runs-on-your-phone-1af)
 
 ## Why this exists
