@@ -38,7 +38,18 @@ function embeddingsFresh() {
   return JSON.stringify(prompts) === JSON.stringify(embeddings.prompts);
 }
 
-async function load() {
+let loading: Promise<void> | null = null;
+
+// one load at a time, even if classify arrives while loading
+function load() {
+  loading ??= loadModel().catch((err) => {
+    loading = null;
+    throw err;
+  });
+  return loading;
+}
+
+async function loadModel() {
   if (vision) return;
   if (!embeddingsFresh()) {
     throw new Error(
@@ -164,6 +175,26 @@ async function viewsOf(image: RawImage): Promise<RawImage[]> {
   return views;
 }
 
+// camera photos are huge, decoding them at full size can kill a phone tab
+const BIG_PHOTO = 1_500_000; // bytes
+const MAX_WIDTH = 1280;
+
+async function shrink(blob: Blob): Promise<Blob> {
+  if (blob.size < BIG_PHOTO) return blob;
+  try {
+    const bmp = await createImageBitmap(blob, {
+      resizeWidth: MAX_WIDTH,
+      resizeQuality: "medium",
+    });
+    const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0);
+    bmp.close();
+    return await canvas.convertToBlob({ type: "image/jpeg", quality: 0.92 });
+  } catch {
+    return blob;
+  }
+}
+
 self.onmessage = async (e: MessageEvent<ToWorker>) => {
   const msg = e.data;
   try {
@@ -172,7 +203,7 @@ self.onmessage = async (e: MessageEvent<ToWorker>) => {
       post({ type: "ready" });
     } else if (msg.type === "classify") {
       await load();
-      const url = URL.createObjectURL(msg.image);
+      const url = URL.createObjectURL(await shrink(msg.image));
       const t0 = performance.now();
       try {
         const image = await load_image(url);

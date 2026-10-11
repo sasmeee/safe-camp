@@ -8,6 +8,9 @@ export type ClassifierStatus = "loading" | "ready" | "busy";
 
 export function useClassifier() {
   const worker = useRef<Worker | null>(null);
+  const startWorker = useRef<(() => void) | null>(null);
+  const asleep = useRef(false);
+  const statusRef = useRef<ClassifierStatus>("loading");
   const [status, setStatus] = useState<ClassifierStatus>("loading");
   const [percent, setPercent] = useState(0);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
@@ -19,48 +22,76 @@ export function useClassifier() {
   const [workerFailed, setWorkerFailed] = useState(false);
 
   useEffect(() => {
-    const w = new Worker(
-      new URL("../workers/classifier.worker.ts", import.meta.url),
-      { type: "module" },
-    );
-    worker.current = w;
+    statusRef.current = status;
+  }, [status]);
 
-    w.onmessage = (e: MessageEvent<FromWorker>) => {
-      if (worker.current !== w) return;
-      const m = e.data;
-      if (m.type === "progress") setPercent(Math.round(m.percent));
-      else if (m.type === "ready") setStatus("ready");
-      else if (m.type === "result") {
-        setVerdict(m.verdict);
-        setMs(m.ms);
-        setQuality(m.quality);
-        setStatus("ready");
-      } else if (m.type === "error") {
-        setError(m.message);
-        setStatus("ready");
-      }
-    };
-
-    const handleWorkerFailure = (message: string) => {
-      console.error(message);
-      if (worker.current !== w) return;
-      worker.current = null;
-      w.terminate();
-      setWorkerFailed(true);
-      setStatus("ready");
-      setError("The offline model stopped unexpectedly.");
-    };
-
-    w.onerror = (ev) =>
-      handleWorkerFailure(
-        `Worker crashed: ${ev.message} at ${ev.filename}:${ev.lineno}`,
+  useEffect(() => {
+    function start() {
+      const w = new Worker(
+        new URL("../workers/classifier.worker.ts", import.meta.url),
+        { type: "module" },
       );
-    w.onmessageerror = () => handleWorkerFailure("Worker message error");
-    w.postMessage({ type: "load" } satisfies ToWorker);
+      worker.current = w;
+      asleep.current = false;
+
+      w.onmessage = (e: MessageEvent<FromWorker>) => {
+        if (worker.current !== w) return;
+        const m = e.data;
+        if (m.type === "progress") setPercent(Math.round(m.percent));
+        else if (m.type === "ready")
+          setStatus((s) => (s === "busy" ? s : "ready"));
+        else if (m.type === "result") {
+          setVerdict(m.verdict);
+          setMs(m.ms);
+          setQuality(m.quality);
+          setStatus("ready");
+        } else if (m.type === "error") {
+          setError(m.message);
+          setStatus("ready");
+        }
+      };
+
+      const handleWorkerFailure = (message: string) => {
+        console.error(message);
+        if (worker.current !== w) return;
+        worker.current = null;
+        w.terminate();
+        setWorkerFailed(true);
+        setStatus("ready");
+        setError("The offline model stopped unexpectedly.");
+      };
+
+      w.onerror = (ev) =>
+        handleWorkerFailure(
+          `Worker crashed: ${ev.message} at ${ev.filename}:${ev.lineno}`,
+        );
+      w.onmessageerror = () => handleWorkerFailure("Worker message error");
+      w.postMessage({ type: "load" } satisfies ToWorker);
+    }
+
+    startWorker.current = start;
+    start();
     navigator.storage?.persist?.();
+
+    // phones kill the page when the camera opens, so free memory while hidden
+    function onVisibility() {
+      if (document.hidden) {
+        if (statusRef.current === "ready" && worker.current) {
+          worker.current.terminate();
+          worker.current = null;
+          asleep.current = true;
+        }
+      } else if (asleep.current) {
+        start();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
-      if (worker.current === w) worker.current = null;
-      w.terminate();
+      document.removeEventListener("visibilitychange", onVisibility);
+      const w = worker.current;
+      worker.current = null;
+      w?.terminate();
     };
   }, [workerAttempt]);
 
@@ -75,6 +106,7 @@ export function useClassifier() {
   useEffect(() => {
     if (status !== "loading") return;
     const t = setTimeout(() => {
+      if (!navigator.onLine) return; // reset offline would remove the app
       try {
         if (sessionStorage.getItem("auto-reset")) return;
         sessionStorage.setItem("auto-reset", "1");
@@ -92,6 +124,7 @@ export function useClassifier() {
     setQuality(null);
     setError(null);
     setWorkerFailed(false);
+    if (!worker.current) startWorker.current?.();
     worker.current?.postMessage({
       type: "classify",
       id: Date.now(),
