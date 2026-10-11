@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/safecamp-logo-light.svg" alt="SafeCamp logo" width="120" />
+  <img src="https://raw.githubusercontent.com/sasmeee/safe-camp/main/public/safecamp-logo-light.svg" alt="SafeCamp logo" width="120" />
 </p>
 
 <h1 align="center">SafeCamp</h1>
@@ -21,8 +21,8 @@
 > The repository was started on October 8, 2026, inside the challenge window.
 
 - **Live demo:** [safecamp.onrender.com](https://safecamp.onrender.com)
-- **Demo video:** `TODO: add link`
-- **DEV post:** `TODO: add link`
+- **Demo video:** [Watch on YouTube](https://youtu.be/T_eaoRa1YOM)
+- **DEV post:** [SafeCamp: an offline campsite safety check that runs on your phone](https://dev.to/sasmeee/safecamp-an-offline-campsite-safety-check-that-runs-on-your-phone-1af)
 
 ## Why this exists
 
@@ -109,17 +109,17 @@ SafeCamp is a first-pass aid, not an authority.
 
 Real scans from a phone, run on the device with no server involved.
 
-| | | | |
-| :---: | :---: | :---: | :---: |
-| <img src="docs/screenshots/scan-snake.webp" width="200" alt="Snake photo, Danger result at 83%" /> | <img src="docs/screenshots/scan-wasp-nest.webp" width="200" alt="Wasp nest photo, Danger result at 95%" /> | <img src="docs/screenshots/scan-pet-dog.webp" width="200" alt="Pet dog photo, no known hazard" /> | <img src="docs/screenshots/scan-tent-campsite.webp" width="200" alt="Tent campsite photo, not sure result" /> |
-| **Snake**<br>Danger, 83% | **Wasp nest**<br>Danger, 95% | **Pet dog**<br>No known hazard, 97% | **Tent campsite**<br>Not sure, 38% |
+|                                                                                                                                                             |                                                                                                                                                                     |                                                                                                                                                            |                                                                                                                                                                        |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| <img src="https://raw.githubusercontent.com/sasmeee/safe-camp/main/docs/screenshots/scan-snake.webp" width="200" alt="Snake photo, Danger result at 83%" /> | <img src="https://raw.githubusercontent.com/sasmeee/safe-camp/main/docs/screenshots/scan-wasp-nest.webp" width="200" alt="Wasp nest photo, Danger result at 95%" /> | <img src="https://raw.githubusercontent.com/sasmeee/safe-camp/main/docs/screenshots/scan-pet-dog.webp" width="200" alt="Pet dog photo, no known hazard" /> | <img src="https://raw.githubusercontent.com/sasmeee/safe-camp/main/docs/screenshots/scan-tent-campsite.webp" width="200" alt="Tent campsite photo, not sure result" /> |
+|                                                                  **Snake**<br>Danger, 83%                                                                   |                                                                    **Wasp nest**<br>Danger, 95%                                                                     |                                                            **Pet dog**<br>No known hazard, 97%                                                             |                                                                   **Tent campsite**<br>Not sure, 38%                                                                   |
 
-| Photo | Result | Time | What it shows |
-| --- | --- | --- | --- |
-| Snake in leaf litter | Danger: Snake (83%) | 494 ms | Scorpion is second at 10%, so the top class is clear. |
-| Wasp nest | Danger: Wasp or hornet nest (95%) | 1048 ms | Names "Bee swarm or wild hive" as the other possibility. |
-| Pet dog on a sofa | No known hazard: "Looks like: Pet dog" (97%) | 1471 ms | The everyday-scene labels stop a normal photo from becoming a hazard. |
-| Tent with camp chairs | Not sure: "Possible: Risky campfire" (38%) | 774 ms | A wrong guess, see the development notes. |
+| Photo                 | Result                                       | Time    | What it shows                                                         |
+| --------------------- | -------------------------------------------- | ------- | --------------------------------------------------------------------- |
+| Snake in leaf litter  | Danger: Snake (83%)                          | 494 ms  | Scorpion is second at 10%, so the top class is clear.                 |
+| Wasp nest             | Danger: Wasp or hornet nest (95%)            | 1048 ms | Names "Bee swarm or wild hive" as the other possibility.              |
+| Pet dog on a sofa     | No known hazard: "Looks like: Pet dog" (97%) | 1471 ms | The everyday-scene labels stop a normal photo from becoming a hazard. |
+| Tent with camp chairs | Not sure: "Possible: Risky campfire" (38%)   | 774 ms  | A wrong guess, see the development notes.                             |
 
 ## Development notes
 
@@ -186,6 +186,7 @@ No cloud APIs (hosted LLMs, databases or text-to-speech) are used, so the offlin
 
 - **Render:** hosts the PWA as a free Web Service. Build command: `bun install && bun run build`. Start command: `bun run start`. Auto-deploys on push to the linked branch.
 - **GitHub Actions:** CI runs lint and build on every push to `dev` and `main`, and on pull requests to `main`. See `.github/workflows/ci.yml`.
+- **ElevenLabs:** generated the narration for the demo video. The app itself does not call ElevenLabs, so the offline and privacy promises stay true.
 
 ## Credits and licenses
 
