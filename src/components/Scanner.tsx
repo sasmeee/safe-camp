@@ -128,6 +128,7 @@ const Scanner = () => {
                       busy={busy}
                       ms={ms}
                       onClick={openCamera}
+                      onGallery={openGallery}
                       className="hidden lg:flex"
                     />
                   </>
@@ -149,6 +150,7 @@ const Scanner = () => {
                     busy={busy}
                     ms={ms}
                     onClick={openCamera}
+                    onGallery={openGallery}
                     className="mt-auto flex lg:hidden"
                   />
                 ) : (

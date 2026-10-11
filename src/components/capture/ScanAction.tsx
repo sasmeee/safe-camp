@@ -4,10 +4,11 @@ type Props = {
   busy: boolean;
   ms: number | null;
   onClick: () => void;
+  onGallery: () => void;
   className: string;
 };
 
-export function ScanAction({ busy, ms, onClick, className }: Props) {
+export function ScanAction({ busy, ms, onClick, onGallery, className }: Props) {
   return (
     <div className={`flex-col gap-2 ${className}`}>
       <Button
@@ -17,6 +18,14 @@ export function ScanAction({ busy, ms, onClick, className }: Props) {
         onClick={onClick}
       >
         {busy ? "Analyzing…" : "Scan another photo"}
+      </Button>
+      <Button
+        variant="outline"
+        icon="image"
+        disabled={busy}
+        onClick={onGallery}
+      >
+        Upload from gallery
       </Button>
       {!busy && ms !== null && (
         <p className="text-center text-xs text-muted">
