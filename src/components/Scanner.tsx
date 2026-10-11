@@ -16,6 +16,7 @@ import { ErrorNotice } from "./status/ErrorNotice";
 import { Header } from "./layout/Header";
 import { PhotoPreview } from "./capture/PhotoPreview";
 import { CameraView } from "./capture/CameraView";
+import { Footer } from "./layout/Footer";
 
 const Scanner = () => {
   const {
@@ -166,6 +167,8 @@ const Scanner = () => {
           </>
         )}
       </div>
+
+      <Footer />
 
       {cameraOpen && (
         <CameraView
