@@ -9,12 +9,13 @@ import { Button } from "./ui/Button";
 import { Tips } from "./capture/Tips";
 import { ScanAction } from "./capture/ScanAction";
 import { ResultCard } from "./result/ResultCard";
-import { Header } from "./layout/Header";
 import { Hero } from "./layout/Hero";
 import { ModelLoader } from "./status/ModelLoader";
 import { QualityNotice } from "./result/QualityNotice";
 import { ErrorNotice } from "./status/ErrorNotice";
+import { Header } from "./layout/Header";
 import { PhotoPreview } from "./capture/PhotoPreview";
+import { CameraView } from "./capture/CameraView";
 
 const Scanner = () => {
   const {
@@ -35,6 +36,7 @@ const Scanner = () => {
   const galleryRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   // free the photo url when leaving the page
   useEffect(
@@ -70,7 +72,12 @@ const Scanner = () => {
     retry();
   }
 
-  const openCamera = () => cameraRef.current?.click();
+  // in-app camera keeps the page alive, the camera app can get it killed
+  const openCamera = () => {
+    if (typeof navigator.mediaDevices?.getUserMedia === "function")
+      setCameraOpen(true);
+    else cameraRef.current?.click();
+  };
   const openGallery = () => galleryRef.current?.click();
 
   const busy = status === "busy";
@@ -157,6 +164,20 @@ const Scanner = () => {
           </>
         )}
       </div>
+
+      {cameraOpen && (
+        <CameraView
+          onCapture={(file) => {
+            setCameraOpen(false);
+            pick(file);
+          }}
+          onClose={() => setCameraOpen(false)}
+          onUseCameraApp={() => {
+            setCameraOpen(false);
+            cameraRef.current?.click();
+          }}
+        />
+      )}
 
       <input
         ref={cameraRef}
